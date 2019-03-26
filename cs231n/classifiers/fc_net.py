@@ -259,6 +259,7 @@ class FullyConnectedNet(object):
         affine_caches = {}
         bn_caches = {}
         relu_caches = {}
+        dp_caches = {}
         
         
         net_x = X.copy()
@@ -271,9 +272,14 @@ class FullyConnectedNet(object):
             else:
                 relu_out, relu_caches['relu'+str(i+1)+'_cache']=relu_forward(fc_out)
                 
-            net_x = relu_out.copy()
-        
-        scores, scores_cache = affine_forward(relu_out, self.params['W'+str(self.num_layers)], self.params['b'+str(self.num_layers)])
+            if self.use_dropout:
+                dp_out, dp_caches['dp'+str(i+1)+'_cache']= dropout_forward(relu_out,self.dropout_param)
+                net_x = dp_out.copy()
+            else:
+                net_x = relu_out.copy()
+                
+
+        scores, scores_cache = affine_forward(net_x, self.params['W'+str(self.num_layers)], self.params['b'+str(self.num_layers)])
                 
 
         ############################################################################
@@ -308,8 +314,13 @@ class FullyConnectedNet(object):
         grads['b'+str(self.num_layers)] = db_last
         
         for i in range(self.num_layers-1,0,-1):
-            drelu = relu_backward(dx_last, relu_caches['relu'+str(i)+'_cache'])
             
+            if self.use_dropout:
+                ddp = dropout_backward(dx_last,dp_caches['dp'+str(i)+'_cache'])
+                drelu = relu_backward(ddp, relu_caches['relu'+str(i)+'_cache'])
+            else:
+                drelu = relu_backward(dx_last, relu_caches['relu'+str(i)+'_cache'])
+
             if self.normalization=='batchnorm':
                 dbn, dgamma, dbeta = batchnorm_backward(drelu, bn_caches['bn'+str(i)+'_cache'])
                 dx_last, dw_last, db_last = affine_backward(dbn, affine_caches['fc'+str(i)+'_cache'])
