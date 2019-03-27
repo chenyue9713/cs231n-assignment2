@@ -185,17 +185,17 @@ class FullyConnectedNet(object):
         last_dim = input_dim
         for i in range(self.num_layers - 1):
             self.params['W' + str(i+1)] = np.random.randn(last_dim, hidden_dims[i]) * weight_scale
-            self.params['b' + str(i+1)] = np.zeros(hidden_dims[i])
+            self.params['b' + str(i+1)] = np.zeros([hidden_dims[i]])
             
             if self.normalization == 'batchnorm':
-                self.params['gamma'+str(i+1)] = np.ones((hidden_dims[i]))
-                self.params['beta'+str(i+1)] = np.zeros((hidden_dims[i]))
+                self.params['gamma'+str(i+1)] = np.ones([hidden_dims[i]])
+                self.params['beta'+str(i+1)] = np.zeros([hidden_dims[i]])
                 
             last_dim = hidden_dims[i]
         
         #Initialize parameters for final FC layer
         self.params['W' + str(self.num_layers)] = np.random.randn(last_dim, num_classes) * weight_scale
-        self.params['b' + str(self.num_layers)] = np.zeros(num_classes)
+        self.params['b' + str(self.num_layers)] = np.zeros([num_classes])
         
         ############################################################################
         #                             END OF YOUR CODE                             #
@@ -263,6 +263,7 @@ class FullyConnectedNet(object):
         
         
         net_x = X.copy()
+        #net_x = np.reshape(net_x,[net_x.shape[0], -1])
         for i in range(self.num_layers -1):
             fc_out, affine_caches['fc'+str(i+1)+'_cache']= affine_forward(net_x, self.params['W'+str(i+1)], self.params['b'+str(i+1)])
             
@@ -305,7 +306,7 @@ class FullyConnectedNet(object):
         # of 0.5 to simplify the expression for the gradient.                      #
         ############################################################################
         data_loss, dscores = softmax_loss(scores, y)
-        reg_loss = 0.5 * self.reg * np.sum(self.params['W'+str(self.num_layers)]*self.params['W'+str(self.num_layers)])
+        reg_loss = 0.5 * self.reg * np.sum(np.square(self.params['W'+str(self.num_layers)]))
         loss = data_loss + reg_loss
         
         dx_last, dw_last, db_last = affine_backward(dscores, scores_cache)
@@ -322,7 +323,7 @@ class FullyConnectedNet(object):
                 drelu = relu_backward(dx_last, relu_caches['relu'+str(i)+'_cache'])
 
             if self.normalization=='batchnorm':
-                dbn, dgamma, dbeta = batchnorm_backward(drelu, bn_caches['bn'+str(i)+'_cache'])
+                dbn, dgamma, dbeta = batchnorm_backward_alt(drelu, bn_caches['bn'+str(i)+'_cache'])
                 dx_last, dw_last, db_last = affine_backward(dbn, affine_caches['fc'+str(i)+'_cache'])
                 grads['gamma'+str(i)] = dgamma
                 grads['beta'+str(i)] = dbeta
@@ -332,7 +333,7 @@ class FullyConnectedNet(object):
             grads['W'+str(i)] = dw_last + self.reg*self.params['W'+str(i)] 
             grads['b'+str(i)] = db_last
  
-            loss += 0.5 * self.reg * np.sum(self.params['W'+str(i)]*self.params['W'+str(i)])
+            loss += 0.5 * self.reg * np.sum(np.square(self.params['W'+str(i)]))
             
             
         
