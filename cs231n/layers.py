@@ -193,7 +193,7 @@ def batchnorm_forward(x, gamma, beta, bn_param):
                 'gamma': gamma,
                 'normalized_x': normalized_x,
                 'sqrtvar':np.sqrt(sample_var + eps),
-                'ivar':1./np.sqrt(sample_var + eps),
+                'ivar':1.0/np.sqrt(sample_var + eps),
                 'x_minus_sample_mean':(x - sample_mean),
                     }
         
@@ -211,7 +211,7 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         # Store the result in the out variable.                               #
         ######################################################################
         #running_var = (N/(N-1))*running_var
-        out = (gamma/np.sqrt(running_var+eps)) * x + (beta - (gamma*running_mean)/np.sqrt(running_var+eps))
+        out = (gamma / (np.sqrt(running_var + eps)) * x) + (beta - (gamma*running_mean)/np.sqrt(running_var + eps))
         
         #######################################################################
         #                          END OF YOUR CODE                           #
@@ -262,7 +262,7 @@ def batchnorm_backward(dout, cache):
     dbeta = np.sum(dout, axis=0)
     
     dxhat = dout * gamma
-    dvar = np.sum(dxhat*x_minus_sample_mean*ivar*ivar**2*(-1./2.),axis=0)
+    dvar = np.sum(dxhat*x_minus_sample_mean*ivar*ivar**2*(-0.5),axis=0)
     dmean = np.sum(dxhat*(-ivar),axis=0) + (1./N)*dvar*np.sum(x_minus_sample_mean*(-2),axis=0)
     
     dx = dxhat * ivar + dvar * (2*x_minus_sample_mean/N) + dmean/N
@@ -309,7 +309,7 @@ def batchnorm_backward_alt(dout, cache):
     dbeta = np.sum(dout, axis=0)
     
      # Alternative faster formula way of calculating dx. ref: http://cthorey.github.io./backpropagation/
-    dx =(1 / N) * gamma * 1/sqrtvar * ((N * dout) - np.sum(dout, axis=0) - (x_minus_sample_mean) * np.square(ivar) * np.sum(dout * (x_minus_sample_mean), axis=0))
+    dx = (1 / N) * gamma * 1/sqrtvar * ((N * dout) - np.sum(dout, axis=0) - (x_minus_sample_mean) * np.square(ivar) * np.sum(dout * (x_minus_sample_mean), axis=0))
 
     ###########################################################################
     #                             END OF YOUR CODE                            #

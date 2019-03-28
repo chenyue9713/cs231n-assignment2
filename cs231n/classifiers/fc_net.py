@@ -265,16 +265,16 @@ class FullyConnectedNet(object):
         net_x = X.copy()
         #net_x = np.reshape(net_x,[net_x.shape[0], -1])
         for i in range(self.num_layers -1):
-            fc_out, affine_caches['fc'+str(i+1)+'_cache']= affine_forward(net_x, self.params['W'+str(i+1)], self.params['b'+str(i+1)])
+            fc_out, affine_caches[str(i+1)]= affine_forward(net_x, self.params['W'+str(i+1)], self.params['b'+str(i+1)])
             
-            if self.normalization=='batchnorm':
-                bn_out, bn_caches['bn'+str(i+1)+'_cache'] = batchnorm_forward(fc_out, self.params['gamma'+str(i+1)], self.params['beta'+str(i+1)], self.bn_params[i])
-                relu_out, relu_caches['relu'+str(i+1)+'_cache']=relu_forward(bn_out)
+            if self.normalization =='batchnorm':
+                bn_out, bn_caches[str(i+1)] = batchnorm_forward(fc_out, self.params['gamma'+str(i+1)], self.params['beta'+str(i+1)], self.bn_params[i])
+                relu_out, relu_caches[str(i+1)]=relu_forward(bn_out)
             else:
-                relu_out, relu_caches['relu'+str(i+1)+'_cache']=relu_forward(fc_out)
+                relu_out, relu_caches[str(i+1)]=relu_forward(fc_out)
                 
             if self.use_dropout:
-                dp_out, dp_caches['dp'+str(i+1)+'_cache']= dropout_forward(relu_out,self.dropout_param)
+                dp_out, dp_caches[str(i+1)]= dropout_forward(relu_out,self.dropout_param)
                 net_x = dp_out.copy()
             else:
                 net_x = relu_out.copy()
@@ -315,20 +315,20 @@ class FullyConnectedNet(object):
         grads['b'+str(self.num_layers)] = db_last
         
         for i in range(self.num_layers-1,0,-1):
-            
+
             if self.use_dropout:
-                ddp = dropout_backward(dx_last,dp_caches['dp'+str(i)+'_cache'])
-                drelu = relu_backward(ddp, relu_caches['relu'+str(i)+'_cache'])
+                ddp = dropout_backward(dx_last,dp_caches[str(i)])
+                drelu = relu_backward(ddp, relu_caches[str(i)])
             else:
-                drelu = relu_backward(dx_last, relu_caches['relu'+str(i)+'_cache'])
+                drelu = relu_backward(dx_last, relu_caches[str(i)])
 
             if self.normalization=='batchnorm':
-                dbn, dgamma, dbeta = batchnorm_backward_alt(drelu, bn_caches['bn'+str(i)+'_cache'])
-                dx_last, dw_last, db_last = affine_backward(dbn, affine_caches['fc'+str(i)+'_cache'])
+                dbn, dgamma, dbeta = batchnorm_backward(drelu, bn_caches[str(i)])
+                dx_last, dw_last, db_last = affine_backward(dbn, affine_caches[str(i)])
                 grads['gamma'+str(i)] = dgamma
                 grads['beta'+str(i)] = dbeta
             else:
-                dx_last, dw_last, db_last = affine_backward(drelu, affine_caches['fc'+str(i)+'_cache'])
+                dx_last, dw_last, db_last = affine_backward(drelu, affine_caches[str(i)])
             
             grads['W'+str(i)] = dw_last + self.reg*self.params['W'+str(i)] 
             grads['b'+str(i)] = db_last
