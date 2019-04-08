@@ -352,7 +352,25 @@ def layernorm_forward(x, gamma, beta, ln_param):
     # transformations you could perform, that would enable you to copy over   #
     # the batch norm code and leave it almost unchanged?                      #
     ###########################################################################
-    pass
+    x = x.T
+    
+    sample_mean = np.mean(x, axis = 0)
+    sample_var = np.var(x, axis = 0)
+
+    normalized_x = (x - sample_mean) / np.sqrt(sample_var + eps)
+    normalized_x = normalized_x.T
+    out = gamma * normalized_x  + beta
+    
+
+    
+    cache = {
+                'gamma': gamma,
+                'normalized_x': normalized_x,
+                'sqrtvar':np.sqrt(sample_var + eps),
+                'ivar':1.0/np.sqrt(sample_var + eps),
+                'x_minus_sample_mean':(x - sample_mean),
+                    }
+   
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
@@ -383,7 +401,27 @@ def layernorm_backward(dout, cache):
     # implementation of batch normalization. The hints to the forward pass    #
     # still apply!                                                            #
     ###########################################################################
-    pass
+    N, D = dout.shape
+    
+    gamma = cache['gamma']
+    normalized_x = cache['normalized_x']
+    sqrtvar = cache['sqrtvar']
+    ivar = cache['ivar']
+    x_minus_sample_mean = cache['x_minus_sample_mean']
+       
+    dgamma = np.sum(dout * normalized_x,axis=0)
+    dbeta = np.sum(dout, axis=0)
+    
+    
+    ## Refer to https://github.com/haofeixu/standford-cs231n-2018/blob/master/assignment2/cs231n/layers.py
+    dxhat = dout * gamma
+    dxhat = dxhat.T
+    normalized_x = normalized_x.T
+    
+    
+    dx = (1 / D) * ivar * ((D * dxhat) - np.sum(dxhat, axis=0) - normalized_x * np.sum(dxhat * normalized_x, axis=0))
+    dx = dx.T
+    
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
@@ -707,7 +745,14 @@ def spatial_batchnorm_forward(x, gamma, beta, bn_param):
     # vanilla version of batch normalization you implemented above.           #
     # Your implementation should be very short; ours is less than five lines. #
     ###########################################################################
-    pass
+    N,C,H,W = x.shape
+    
+    x_reshpe = np.reshape(np.transpose(x,(0,2,3,1)),(-1,C))
+    
+    out, cache = batchnorm_forward(x_reshpe, gamma, beta, bn_param)
+    
+    out = np.transpose(np.reshape(out, (N,H,W,C)),(0,3,1,2))
+
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
@@ -737,7 +782,14 @@ def spatial_batchnorm_backward(dout, cache):
     # vanilla version of batch normalization you implemented above.           #
     # Your implementation should be very short; ours is less than five lines. #
     ###########################################################################
-    pass
+    N, C, H, W = dout.shape
+    
+    dout_reshape = np.reshape(np.transpose(dout,(0,2,3,1)),(-1,C))
+    
+    dx, dgamma, dbeta = batchnorm_backward(dout_reshape,cache)
+    
+    dx = np.transpose(np.reshape(dx, (N,H,W,C)),(0,3,1,2))
+    
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
