@@ -52,7 +52,7 @@ class TwoLayerNet(object):
         W2 = np.random.randn(hidden_dim, num_classes) * weight_scale
         b2 = np.zeros(num_classes)
         self.params = {'W1': W1, 'b1': b1, 'W2':W2, 'b2': b2}
- ############################################################################
+        ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
 
@@ -187,7 +187,7 @@ class FullyConnectedNet(object):
             self.params['W' + str(i+1)] = np.random.randn(last_dim, hidden_dims[i]) * weight_scale
             self.params['b' + str(i+1)] = np.zeros([hidden_dims[i]])
             
-            if self.normalization == 'batchnorm':
+            if self.normalization == 'batchnorm' or self.normalization == 'layernorm':
                 self.params['gamma'+str(i+1)] = np.ones([hidden_dims[i]])
                 self.params['beta'+str(i+1)] = np.zeros([hidden_dims[i]])
                 
@@ -258,6 +258,7 @@ class FullyConnectedNet(object):
         
         affine_caches = {}
         bn_caches = {}
+        ln_caches = {}
         relu_caches = {}
         dp_caches = {}
         
@@ -270,6 +271,9 @@ class FullyConnectedNet(object):
             if self.normalization =='batchnorm':
                 bn_out, bn_caches[str(i+1)] = batchnorm_forward(fc_out, self.params['gamma'+str(i+1)], self.params['beta'+str(i+1)], self.bn_params[i])
                 relu_out, relu_caches[str(i+1)]=relu_forward(bn_out)
+            elif self.normalization =='layernorm':
+                ln_out, ln_caches[str(i+1)] = layernorm_forward(fc_out, self.params['gamma'+str(i+1)], self.params['beta'+str(i+1)], self.bn_params[i])
+                relu_out, relu_caches[str(i+1)]=relu_forward(ln_out)
             else:
                 relu_out, relu_caches[str(i+1)]=relu_forward(fc_out)
                 
@@ -327,6 +331,11 @@ class FullyConnectedNet(object):
                 dx_last, dw_last, db_last = affine_backward(dbn, affine_caches[str(i)])
                 grads['gamma'+str(i)] = dgamma
                 grads['beta'+str(i)] = dbeta
+            elif self.normalization=='layernorm':
+                dln, dgamma, dbeta = layernorm_backward(drelu, ln_caches[str(i)])
+                dx_last, dw_last, db_last = affine_backward(dln, affine_caches[str(i)])
+                grads['gamma'+str(i)] = dgamma
+                grads['beta'+str(i)] = dbeta           
             else:
                 dx_last, dw_last, db_last = affine_backward(drelu, affine_caches[str(i)])
             
